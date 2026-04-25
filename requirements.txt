@@ -1,0 +1,29 @@
+# Core ML
+torch
+transformers
+datasets
+accelerate
+evaluate
+
+# NLP
+spacy
+sentence-transformers
+wordfreq
+
+# Evaluation
+bert-score
+
+# App
+gradio
+plotly
+
+# Data
+pandas
+numpy
+scikit-learn
+
+# Utilities
+requests
+python-dotenv
+tqdm
+pydantic
