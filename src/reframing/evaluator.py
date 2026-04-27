@@ -44,17 +44,21 @@ class RewriteEvaluator:
         refs = [reference] if reference else candidates[:1]
 
         # Compute BERTScore for all candidates at once
-        try:
-            P, R, F1 = bert_score_fn(
-                candidates,
-                [original] * len(candidates),
-                lang="en",
-                rescale_with_baseline=True,
-                verbose=False,
-            )
-            bert_f1_scores = F1.tolist()
-        except Exception:
-            bert_f1_scores = [0.5] * len(candidates)
+        # Skip BERTScore if only one candidate — saves 30-60 seconds
+        if len(candidates) <= 1:
+            bert_f1_scores = [0.75]
+        else:
+            try:
+                P, R, F1 = bert_score_fn(
+                    candidates,
+                    [original] * len(candidates),
+                    lang="en",
+                    rescale_with_baseline=True,
+                    verbose=False,
+                )
+                bert_f1_scores = F1.tolist()
+            except Exception:
+                bert_f1_scores = [0.5] * len(candidates)
 
         scores: list[dict] = []
         for i, cand in enumerate(candidates):

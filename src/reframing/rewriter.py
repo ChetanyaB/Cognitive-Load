@@ -13,7 +13,7 @@ load_dotenv()
 OLLAMA_DEFAULT_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 HF_API_BASE = "https://api-inference.huggingface.co/models"
 DEFAULT_MODEL = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
-TEMPERATURES = [0.3, 0.5, 0.7]
+TEMPERATURES = [0.4]
 
 
 class TextRewriter:
@@ -30,13 +30,19 @@ class TextRewriter:
         print(f"TextRewriter initialized with backend: {self.backend}")
 
     def _detect_backend(self) -> str:
-        """Try Ollama first (local, free), fall back to HF API."""
+        """Use Ollama only if server AND model are available."""
         try:
             resp = requests.get(f"{self.ollama_url}/api/tags", timeout=3)
             if resp.status_code == 200:
-                return "ollama"
+                data = resp.json()
+                
+                # Check if mistral model exists
+                models = [m["name"] for m in data.get("models", [])]
+                if any("mistral" in m for m in models):
+                    return "ollama"
         except Exception:
             pass
+
         return "huggingface"
 
     # ------------------------------------------------------------------
@@ -61,7 +67,9 @@ class TextRewriter:
         return candidates
 
     def rewrite_single(self, text: str, temperature: float = 0.5) -> str:
-        """Return single rewrite at given temperature."""
+        # Truncate to 800 chars before sending to LLM
+        if len(text) > 800:
+            text = text[:800].rsplit(" ", 1)[0] + "…"
         messages = build_prompt(text)
         if self.backend == "ollama":
             return self._call_ollama(messages, temperature)
@@ -88,7 +96,7 @@ class TextRewriter:
         resp = requests.post(
             f"{self.ollama_url}/api/chat",
             json=payload,
-            timeout=120,
+            timeout=30,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -108,16 +116,18 @@ class TextRewriter:
             "Authorization": f"Bearer {self.hf_token}",
             "Content-Type": "application/json",
         }
-        payload = {
-            "inputs": prompt,
-            "parameters": {
+        payload: dict[str, Any] = {
+            "model": ollama_model,
+            "messages": messages,
+            "stream": False,
+            "options": {
                 "temperature": temperature,
-                "max_new_tokens": 512,
-                "return_full_text": False,
+                "num_predict": 300,       # max tokens to generate
+                "num_ctx": 1024,          # smaller context window = faster
             },
         }
         url = f"{HF_API_BASE}/{self.model_name}"
-        resp = requests.post(url, headers=headers, json=payload, timeout=120)
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
         data = resp.json()
 

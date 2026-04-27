@@ -12,7 +12,7 @@ PASSIVE_DEPS = {"auxpass", "nsubjpass"}
 def get_nlp() -> spacy.language.Language:
     global _nlp
     if _nlp is None:
-        _nlp = spacy.load("en_core_web_lg")
+        _nlp = spacy.load("en_core_web_sm")
     return _nlp
 
 

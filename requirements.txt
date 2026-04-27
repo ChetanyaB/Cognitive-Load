@@ -27,3 +27,4 @@ requests
 python-dotenv
 tqdm
 pydantic
+sentencepiece

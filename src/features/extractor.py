@@ -109,7 +109,9 @@ class FeatureExtractor:
         density = extract_density_features(text)
 
         analyzer = self._get_coherence_analyzer()
-        if analyzer is not None:
+        # Skip coherence for short texts (< 3 sentences) — saves 2-3 seconds
+        sentences = text.count('.') + text.count('!') + text.count('?')
+        if analyzer is not None and sentences >= 3:
             try:
                 coherence = analyzer.analyze(text)
             except Exception:

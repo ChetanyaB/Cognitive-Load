@@ -117,6 +117,8 @@ class CognitiveLoadPredictor:
             sentence_scores: list of per-sentence scores
             method: "model" | "heuristic"
         """
+        from src.utils.text_utils import truncate_text
+        text = truncate_text(text, max_chars=2000)
         if self._use_model and self._model is not None:
             return self._model_predict(text)
         return self._heuristic_predict(text)
