@@ -1,0 +1,26 @@
+{
+  "thresholds_fitted_on_val": [
+    31.0,
+    31.5
+  ],
+  "val_accuracy": 0.5555555555555556,
+  "test_accuracy": 0.46296296296296297,
+  "test_macro_f1": 0.37964912280701757,
+  "test_confusion_matrix": [
+    [
+      11,
+      2,
+      5
+    ],
+    [
+      5,
+      0,
+      13
+    ],
+    [
+      4,
+      0,
+      14
+    ]
+  ]
+}

@@ -731,6 +731,14 @@ st.markdown("""
     text-align: center;
     border: 1px solid #1f2937;
 }
+/* Light text on the dark cards (with Streamlit's light theme the text was dark-on-dark) */
+.metric-card h3, .metric-card p {
+    color: #f9fafb !important;
+}
+.metric-card p {
+    color: #9ca3af !important;
+    margin-bottom: 0;
+}
 .title {
     font-size: 2.2rem;
     font-weight: 700;

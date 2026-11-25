@@ -53,24 +53,39 @@ def extract_zip(zip_path: Path, extract_to: Path) -> None:
 
 
 def detect_level(filename: str) -> str | None:
-    lower = filename.lower()
-    for alias, canonical in LEVEL_ALIASES.items():
-        if alias in lower:
-            return canonical
-    return None
+    """Read the level from the file suffix ("Amazon-adv.txt") or folder ("Adv-Txt").
+
+    Plain substring matching mislabelled titles that contain a level code,
+    e.g. "Printing-adv.txt" (contains "int") or "Telecom-adv.txt" (contains "ele").
+    """
+    import re
+    name = Path(filename).name.lower()
+    m = re.search(r"[-_ ](elementary|intermediate|advanced|ele|int|adv)(?:\.[a-z]+)*$", name)
+    if m is None:
+        m = re.match(r"^(elementary|intermediate|advanced|ele|int|adv)\b", name)
+    return LEVEL_ALIASES[m.group(1)] if m else None
 
 
 def parse_onestop(onestop_root: Path) -> list[dict]:
     records: list[dict] = []
     article_id = 0
 
-    # Walk all text files inside the extracted archive
-    for path in sorted(onestop_root.rglob("*.txt")):
+    # Only read the plain-text articles. The archive also contains parse trees
+    # (Processed-AllLevels-AllFiles/Parsed/*.parsed.txt) and sentence-aligned pair
+    # files; reading every *.txt mixed ~30% parse trees and duplicates into the dataset.
+    text_dirs = list(onestop_root.rglob("Texts-SeparatedByReadingLevel"))
+    search_root = text_dirs[0] if text_dirs else onestop_root
+    seen_names: set[str] = set()
+    for path in sorted(search_root.rglob("*.txt")):
+        # The upstream archive contains a nested duplicate folder (Int-Txt/Int-Txt)
+        if path.name in seen_names:
+            continue
+        seen_names.add(path.name)
         level = detect_level(path.name) or detect_level(str(path.parent))
         if level is None:
             continue
         try:
-            text = path.read_text(encoding="utf-8", errors="replace").strip()
+            text = path.read_text(encoding="utf-8-sig", errors="replace").strip()
         except Exception:
             continue
         if len(text) < 50:

@@ -22,9 +22,12 @@ def _precision_recall_f1(
     hyp_ngrams: Counter, ref_ngrams: Counter
 ) -> tuple[float, float, float]:
     """Compute precision, recall, and F1 between hypothesis and reference n-gram counters."""
-    if not hyp_ngrams:
-        return 0.0, 0.0, 0.0
-    if not ref_ngrams:
+    # Nothing expected and nothing produced is a perfect match (same convention
+    # as the reference EASSE implementation). Previously this returned 0, which
+    # capped SARI for identical texts at ~58.
+    if not hyp_ngrams and not ref_ngrams:
+        return 1.0, 1.0, 1.0
+    if not hyp_ngrams or not ref_ngrams:
         return 0.0, 0.0, 0.0
 
     overlap = hyp_ngrams & ref_ngrams
