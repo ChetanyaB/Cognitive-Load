@@ -165,8 +165,14 @@ class CognitiveLoadPredictor:
             "method": "model",
         }
 
-    def _heuristic_predict(self, text: str) -> dict:
-        """Fallback using weighted feature combination to estimate load score."""
+    def _heuristic_predict(self, text: str, with_sentences: bool = True) -> dict:
+        """Fallback using weighted feature combination to estimate load score.
+
+        with_sentences=False is used for the per-sentence scores. Without it the
+        sentence scorer called this method, which called the sentence scorer again,
+        until Python's recursion limit was hit; the error was swallowed, so every
+        sentence silently scored 50 and one prediction took over a minute.
+        """
         fv = self.feature_extractor.extract(text)
         flat = fv.to_flat_dict()
 
@@ -192,7 +198,7 @@ class CognitiveLoadPredictor:
         confidence = 0.4 + 0.4 * (available / len(HEURISTIC_WEIGHTS))
 
         dimensions = self._compute_dimensions(flat)
-        sentence_scores = self._compute_sentence_scores(text)
+        sentence_scores = self._compute_sentence_scores(text) if with_sentences else [round(score, 1)]
 
         return {
             "load_score": round(score, 1),
@@ -249,7 +255,7 @@ class CognitiveLoadPredictor:
                 scores.append(50.0)
                 continue
             try:
-                result = self._heuristic_predict(sent)
+                result = self._heuristic_predict(sent, with_sentences=False)
                 scores.append(result["load_score"])
             except Exception:
                 scores.append(50.0)

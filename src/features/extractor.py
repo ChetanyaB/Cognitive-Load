@@ -84,22 +84,26 @@ class FeatureExtractor:
         self._hf_model_name = hf_model_name
         self._coherence_analyzer = None
 
+    # Models are loaded once. If loading fails (e.g. offline), remember the failure
+    # instead of retrying on every call; retrying made each prediction take ~80 s.
     def _get_tokenizer(self):
-        if self._tokenizer is None:
+        if self._tokenizer is None and not getattr(self, "_tokenizer_failed", False):
             try:
                 from transformers import AutoTokenizer
                 self._tokenizer = AutoTokenizer.from_pretrained(self._hf_model_name)
             except Exception:
                 self._tokenizer = None
+                self._tokenizer_failed = True
         return self._tokenizer
 
     def _get_coherence_analyzer(self):
-        if self._coherence_analyzer is None:
+        if self._coherence_analyzer is None and not getattr(self, "_coherence_failed", False):
             try:
                 from src.embeddings.coherence import CoherenceAnalyzer
                 self._coherence_analyzer = CoherenceAnalyzer()
             except Exception:
                 self._coherence_analyzer = None
+                self._coherence_failed = True
         return self._coherence_analyzer
 
     def extract(self, text: str) -> FeatureVector:

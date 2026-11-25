@@ -37,8 +37,32 @@ def _call_gpt(messages: list[dict], temperature: float = 0.3) -> str:
 #  ANALYZE
 # ─────────────────────────────────────────────
 
+_LOCAL_PREDICTOR = None
+
+
+def _local_analyze(text: str) -> dict:
+    """Offline fallback: the feature-based CognitiveLoadPredictor (no API key needed)."""
+    global _LOCAL_PREDICTOR
+    if _LOCAL_PREDICTOR is None:
+        from src.detection.predictor import CognitiveLoadPredictor
+        _LOCAL_PREDICTOR = CognitiveLoadPredictor()
+    result = _LOCAL_PREDICTOR.predict(text)
+    result["explanation"] = (
+        "Local feature-based estimate (spaCy syntax, lexical rarity, information density). "
+        "Set OPENAI_API_KEY in .env for GPT-based analysis."
+    )
+    result["method"] = "local-" + result.get("method", "heuristic")
+    return result
+
+
 def gpt_analyze(text: str) -> dict:
-    """Send text to GPT and get cognitive load analysis back as a structured dict."""
+    """Send text to GPT and get cognitive load analysis back as a structured dict.
+
+    Falls back to the local feature-based predictor when no OpenAI key is set,
+    so the Analyze tab works out of the box.
+    """
+    if not OPENAI_API_KEY or OPENAI_API_KEY == "sk-your-openai-key-here":
+        return _local_analyze(text)
 
     messages = [
         {

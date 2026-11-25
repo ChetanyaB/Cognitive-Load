@@ -174,14 +174,6 @@ def run_batch(file_obj):
 # ─────────────────────────────────────────────
 
 def build_app():
-    # Build each tab component explicitly outside the context manager
-    # to avoid Gradio version scoping issues
-
-    analyze_tab = gr.Tab("Analyze")
-    reframe_tab = gr.Tab("Reframe")
-    batch_tab = gr.Tab("Batch")
-    about_tab = gr.Tab("About")
-
     demo = gr.Blocks(title="Cognitive Load Detector")
 
     with demo:
@@ -260,4 +252,10 @@ def build_app():
                     outputs=[batch_table, download_out],
                 )
 
-            
+    # build_app() previously ended without returning, so run_app.py exited with
+    # "build_app() returned None" and the Gradio UI never started.
+    return demo
+
+
+if __name__ == "__main__":
+    build_app().launch()
