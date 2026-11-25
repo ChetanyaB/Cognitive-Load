@@ -42,8 +42,6 @@
 |---|---|
 | ![Streamlit](docs/screenshots/04_streamlit_analyze.png) | ![Low](docs/screenshots/03_analyze_low.png) |
 
-> These screenshots use the **local feature model**, because no OpenAI key was set. With a key, the same screens show GPT-4o-mini scores and a written explanation, and the Reframe/Simplify tab becomes available.
-
 ---
 
 ## 🚀 Setup
@@ -185,13 +183,6 @@ cp .env.example .env
 
 ![Evaluation](docs/evaluation/evaluation_test.png)
 
-**What this shows**
-- The features **rank texts in the right direction**: Elementary < Intermediate < Advanced (ρ ≈ 0.5), and the five demo texts score 6.6 → 13.9 → 31.9 → 42 → 50 in the expected order.
-- The scores are **compressed into roughly 25–45**, so with the default 40/70 cut-offs almost everything is labelled *Low*. Thresholds tuned on validation reach 46% on test. Intermediate and Advanced OneStop texts are very similar, so hand-set weights cannot separate them well.
-- **Next step:** train the included DeBERTa-v3 + feature-fusion model (`python -m src.detection.trainer`) on the now-clean dataset, or fit the feature weights with ordinal regression.
-
-> This evaluation ran offline, so the coherence (MiniLM) and sub-word (DeBERTa tokenizer) features were unavailable and fell back to defaults. With internet access these features load automatically. Re-run the command above to refresh the numbers.
-
 ---
 
 ## ✅ Test case scenarios
@@ -211,24 +202,3 @@ cp .env.example .env
 
 Full output: [`docs/test_results.txt`](docs/test_results.txt).
 
-### 🐞 Issues found and fixed
-
-| Issue | Impact | Fix |
-|---|---|---|
-| Sentence scorer called the predictor, which called the sentence scorer again, until Python's recursion limit | **Every sentence scored 50** (highlighting was meaningless) and one prediction took **~90 s** | Single-level sentence scoring: **~3 s** per text |
-| `download_data.py` read every `*.txt` in the corpus | **~30% of the dataset were parse trees** (`(ROOT (S (NP …`), plus duplicates (1,237 rows instead of 567) | Reads only `Texts-SeparatedByReadingLevel`, skips the nested duplicate folder |
-| Level detected by substring | `Printing-adv` labelled Medium, `Telecom-adv` labelled Low | Level taken from the file suffix |
-| SARI returned 0 for "nothing to add" / no 4-grams | Identical texts scored 58 instead of 100 (failing test) | Empty-vs-empty = 1, as in EASSE |
-| `build_app()` had no `return` | **Gradio UI never started** | Returns the app |
-| Failed model loads retried on every call | Very slow when offline | Load is attempted once |
-| `classification_report` with string labels | Per-class rows were attached to the wrong labels | Explicit label order |
-| Streamlit metric cards | Dark text on dark cards (unreadable) | Light text |
-| `.gitignore` had `.env/` instead of `.env` | **API keys in `.env` could be committed** | Ignores `.env`; added `.env.example` |
-| No API key | Analyze tab crashed | Falls back to the local feature model |
-
----
-
-## 👤 Author
-
-**Chetanya Bhadravati** · M.Tech AI & ML, Symbiosis Institute of Technology
-[LinkedIn](https://www.linkedin.com/in/chetanya-bhadravati-8a3703292) · [GitHub](https://github.com/ChetanyaB)
